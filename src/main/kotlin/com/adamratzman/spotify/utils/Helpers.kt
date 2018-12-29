@@ -6,6 +6,7 @@ package com.adamratzman.spotify.utils
 import com.adamratzman.spotify.main.SpotifyAPI
 import com.adamratzman.spotify.main.SpotifyRestAction
 import com.google.gson.Gson
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InvalidObjectException
 import java.net.URLEncoder
@@ -145,9 +146,14 @@ internal fun Any.instantiatePagingObjects(spotifyAPI: SpotifyAPI) = when {
 
 internal fun <T> String.toPagingObject(innerObjectName: String? = null, endpoint: SpotifyEndpoint, tClazz: Class<T>): PagingObject<T> {
     val jsonObject = if (innerObjectName != null) JSONObject(this).getJSONObject(innerObjectName) else JSONObject(this)
+    val jsonArray: JSONArray = jsonObject.getJSONArray("items")
+    val list = ArrayList<T>()
+    for(i in 0 until jsonArray.length()) {
+        list.add(jsonArray.get(i).toString().toObject(endpoint.api, tClazz))
+    }
     val pagingObject = PagingObject(
             jsonObject.getString("href"),
-            jsonObject.getJSONArray("items").map { it.toString().toObject(endpoint.api, tClazz) },
+            list,
             jsonObject.getInt("limit"),
             jsonObject.get("next") as? String,
             jsonObject.get("offset") as Int,
